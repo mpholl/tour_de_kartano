@@ -36,40 +36,45 @@ def get_coordinates_from_page(url):
             pass
     return None
 
-def collect_coordinates_with_names(urls):
+def collect_coordinates_with_names_and_urls(urls):
     coords = []
     for url in urls:
         print(f"Checking: {url}")
         resp = requests.get(url)
         soup = BeautifulSoup(resp.text, 'html.parser')
 
-        # Try to find coordinates
         geo = soup.find("span", class_="geo")
         if geo:
             try:
                 lat, lon = map(float, geo.text.strip().split(';'))
-
-                # Try to get the page title as name
                 title_tag = soup.find("h1", id="firstHeading")
                 name = title_tag.text.strip() if title_tag else "Unknown Mansion"
-
-                coords.append((name, lat, lon))
+                coords.append((name, lat, lon, url))
             except ValueError:
                 continue
     return coords
 
-def plot_on_map(coords_with_names):
+
+def plot_on_map(coords_with_info):
     m = folium.Map(location=[63.0, 26.0], zoom_start=5)
-    for name, lat, lon in coords_with_names:
-        folium.Marker(location=[lat, lon], popup=name).add_to(m)
+    for name, lat, lon, url in coords_with_info:
+        html = f'<b>{name}</b><br><a href="{url}" target="_blank">Wikipedia Page</a>'
+        popup = folium.Popup(html, max_width=300)
+        folium.Marker(location=[lat, lon], popup=popup).add_to(m)
     return m
 
 
-def export_to_gpx(coords_with_names, filename="mansions.gpx"):
+
+def export_to_gpx(coords_with_info, filename="mansions.gpx"):
     gpx = gpxpy.gpx.GPX()
 
-    for name, lat, lon in coords_with_names:
-        waypoint = gpxpy.gpx.GPXWaypoint(latitude=lat, longitude=lon, name=name)
+    for name, lat, lon, url in coords_with_info:
+        waypoint = gpxpy.gpx.GPXWaypoint(
+            latitude=lat,
+            longitude=lon,
+            name=name,
+            description=f"Wikipedia: {url}"
+        )
         gpx.waypoints.append(waypoint)
 
     with open(filename, "w") as f:
@@ -80,7 +85,7 @@ def export_to_gpx(coords_with_names, filename="mansions.gpx"):
 
 # Run the steps
 links = get_mansion_links(list_url)
-coords = collect_coordinates_with_names(links)
+coords = collect_coordinates_with_names_and_urls(links)
 map_object = plot_on_map(coords)
 export_to_gpx(coords)
 
