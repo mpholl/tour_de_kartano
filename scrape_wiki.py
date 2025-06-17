@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import folium
+from folium import Icon
 import re
 from urllib.parse import urljoin
 import gpxpy
@@ -60,7 +61,11 @@ def plot_on_map(coords_with_info):
     for name, lat, lon, url in coords_with_info:
         html = f'<b>{name}</b><br><a href="{url}" target="_blank">Wikipedia Page</a>'
         popup = folium.Popup(html, max_width=300)
-        folium.Marker(location=[lat, lon], popup=popup).add_to(m)
+        folium.Marker(
+            location=[lat, lon],
+            popup=popup,
+            icon=folium.Icon(icon='chess-rook', prefix='fa', color='darkpurple')
+        ).add_to(m)
     return m
 
 
